@@ -1,63 +1,38 @@
-agent any
-    tools {
-        maven 'MAVEN_PATH'
-        jdk 'jdk8'
+properties([
+  parameters([
+    [
+      $class: 'ChoiceParameter',
+      choiceType: 'PT_SINGLE_SELECT',
+      name: 'Environment',
+      script: [
+        $class: 'ScriptlerScript',
+        scriptlerScriptId:'Environments.groovy'
+      ]
+    ],
+    [
+      $class: 'CascadeChoiceParameter',
+      choiceType: 'PT_SINGLE_SELECT',
+      name: 'Host',
+      referencedParameters: 'Environment',
+      script: [
+        $class: 'ScriptlerScript',
+        scriptlerScriptId:'HostsInEnv.groovy',
+        parameters: [
+          [name:'Environment', value: '$Environment']
+        ]
+      ]
+   ]
+ ])
+])
+
+pipeline {
+  agent any
+  stages {
+    stage('Build') {
+      steps {
+        echo "${params.Environment}"
+        echo "${params.Host}"
+      }
     }
-    stages {
-        stage("Tools initialization") {
-            steps {
-                sh "mvn --version"
-                sh "java -version"
-            }
-        }
-        stage("Checkout Code") {
-            steps {
-                checkout scm
-            }
-        }
-        stage("Check Code Health") {
-            when {
-                not {
-                    anyOf {
-                        branch 'master';
-                      
-                    }
-                }
-           }
-           steps {
-               sh "mvn clean compile"
-            }
-        }
-        stage("Run Test cases") {
-            when {
-                branch 'develop';
-            }
-           steps {
-               sh "mvn clean test"
-            }
-        }
-        stage("Check Code coverage") {
-            when {
-                branch 'develop'
-            }
-            steps {
-               jacoco(
-                    execPattern: '**/target/**.exec',
-                    classPattern: '**/target/classes',
-                    sourcePattern: '**/src',
-                    inclusionPattern: 'com/iamvickyav/**',
-                    changeBuildStatus: true,
-                    minimumInstructionCoverage: '30',
-                    maximumInstructionCoverage: '80')
-           }
-        }
-        stage("Build & Deploy Code") {
-            when {
-                branch 'master'
-            }
-            steps {
-                sh "mvn tomcat7:deploy"
-            }
-        }
-    }
- }
+  }
+}
