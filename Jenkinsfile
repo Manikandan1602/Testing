@@ -20,7 +20,7 @@ agent any
                 not {
                     anyOf {
                         branch 'master';
-                        branch 'develop'
+                      
                     }
                 }
            }
